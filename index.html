@@ -1,0 +1,20 @@
+<script type="module">
+  import { auth } from './js/auth.js'
+
+  // Proteger rota
+  window.addEventListener('DOMContentLoaded', async () => {
+    const session = await auth.requireAuth('/login.html')
+    
+    // Carregar dados do usuário
+    const user = await auth.getCurrentUser()
+    if (user) {
+      document.querySelector('.text-brand-700').textContent = 
+        user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
+    }
+  })
+
+  // Logout
+  document.querySelector('[data-action="logout"]')?.addEventListener('click', () => {
+    auth.signOut()
+  })
+</script>
