@@ -1,20 +1,108 @@
-<script type="module">
-  import { auth } from './js/auth.js'
+'use client'
 
-  // Proteger rota
-  window.addEventListener('DOMContentLoaded', async () => {
-    const session = await auth.requireAuth('/login.html')
-    
-    // Carregar dados do usuário
-    const user = await auth.getCurrentUser()
-    if (user) {
-      document.querySelector('.text-brand-700').textContent = 
-        user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase/client'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { BookOpen, PenTool, Headphones, Mic, TrendingUp, Award, Clock, CheckCircle, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+
+export default function Home() {
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({ totalLessons: 0, completed: 0 })
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // 1. Busca total de lições no banco
+        const { count } = await supabase
+          .from('eng_lessons')
+          .select('*', { count: 'exact', head: true })
+
+        // 2. Aqui entrará a lógica de progresso do aluno (após login)
+        setStats({ 
+          totalLessons: count || 0, 
+          completed: 0 
+        })
+      } catch (error) {
+        console.error('Erro ao conectar no banco:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  })
+    fetchData()
+  }, [])
 
-  // Logout
-  document.querySelector('[data-action="logout"]')?.addEventListener('click', () => {
-    auth.signOut()
-  })
-</script>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-3 text-slate-600">Conectando ao banco...</span>
+      </div>
+    )
+  }
+
+  const skills = [
+    { name: 'Reading', icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50', desc: 'Compreensão de textos' },
+    { name: 'Writing', icon: PenTool, color: 'text-emerald-600', bg: 'bg-emerald-50', desc: 'Produção escrita' },
+    { name: 'Listening', icon: Headphones, color: 'text-purple-600', bg: 'bg-purple-50', desc: 'Compreensão auditiva' },
+    { name: 'Speaking', icon: Mic, color: 'text-orange-600', bg: 'bg-orange-50', desc: 'Expressão oral' },
+  ]
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-6 md:p-12">
+      <div className="max-w-6xl mx-auto space-y-8">
+        
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Olá, Aluno! 👋</h1>
+            <p className="text-slate-500 mt-1">Banco conectado. {stats.totalLessons} lições disponíveis.</p>
+          </div>
+          <Button variant="outline">Ver Perfil</Button>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Total de Lições</p>
+                <p className="text-2xl font-bold mt-1">{stats.totalLessons}</p>
+              </div>
+              <div className="p-3 rounded-full text-blue-600 bg-blue-50">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Outros cards podem vir aqui */}
+        </div>
+
+        {/* Skills Selection */}
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Escolha uma Habilidade</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {skills.map((skill, i) => (
+              <Card key={i} className="group hover:border-blue-300 transition-colors cursor-pointer">
+                <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
+                  <div className={`p-4 rounded-xl ${skill.bg} ${skill.color} group-hover:scale-110 transition-transform`}>
+                    <skill.icon className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg text-slate-900">{skill.name}</h3>
+                    <p className="text-sm text-slate-500 mt-1">{skill.desc}</p>
+                  </div>
+                  <Link href="/module/A1.1-RD" className="w-full">
+                    <Button className="w-full mt-2 group-hover:bg-blue-700">Acessar</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
